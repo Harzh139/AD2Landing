@@ -66,34 +66,31 @@ Return ONLY a valid JSON object with the following keys:
             return {"error": f"Failed to analyze image: {str(e)}"}
 
     def generate_landing_page(self, ad_analysis: dict, scraped_data: dict, tone_selector: str = "professional") -> dict:
-        prompt = f"""You are an expert conversion copywriter and web strategist.
-Given an advertisement analysis and current landing page content, generate high-converting landing page variations.
+        prompt = f"""You are an expert Conversion Rate Optimizer (CRO) and direct-response copywriter.
+Your task is to take an EXISTING landing page and optimize/personalize it based on a specific Advertisement.
 
 Ad Analysis:
 {json.dumps(ad_analysis, indent=2)}
 
-Original Landing Page Content (Scraped):
+Existing Landing Page Content (Scraped Data):
 {json.dumps(scraped_data, indent=2)}
 
 Tone requested: {tone_selector}
 
-TASK:
-1. Analyze the context: Industry (e-com, SaaS, etc), Intent (discount, premium, etc), Audience, and category (product, saas, or service).
-2. Suggest a primary color hex code matching the tone and ad context.
-3. Generate 2 to 3 structured variations of the landing page.
+CRITICAL GOAL:
+Do NOT create a brand new page from scratch. Instead, ENHANCE the existing content. Improve headlines, adjust the tone to match the ad's intent, add urgency, and highlight the benefits that specifically appeal to the ad's audience.
 
-Rules for Variations:
-- DO NOT repeat the ad headline exactly — improve it contextually.
-- Hero: provide a badge, headline, subheadline, cta, and image_keyword (e.g., 'dashboard', 'fitness', 'product').
-- Benefits: Provide 3-4 benefits. Each must have a 'title', 'description', and a simple keyword for 'icon'.
-- Social Proof: Adapt to context type (B2C = testimonials, B2B = metrics/logos). 
-- Pricing / Value: Adapt based on context type (discount = old vs new price; saas_plan = plan name/features; service_outcome = outcome title/desc).
-- Product / Features: Adapt block (product_cards, feature_blocks, or transformations) with items.
-- Final CTA: Urgency driven.
+TASK REQUIREMENTS:
+1. Maintain the "Core Identity" of the existing page but improve every element for higher conversion.
+2. Identify 3-4 specific "Optimized Variations" where each variation is an incremental improvement over the original.
+3. For each variation, you MUST provide:
+   - Updated content (Hero, Benefits, Social Proof, CTA, etc.) grounded in original data but improved.
+   - A list of specific changes made (e.g., "Changed headline from 'Welcome' to 'Get 20% Off Now'").
+   - CRO Reasoning for each change (e.g., "Aligns with the 'discount' intent of the ad creative").
 
-Output ONLY valid JSON in the exact following structure with NO markdown or explanations:
+Output ONLY valid JSON in the following structure:
 {{
-  "mismatch_analysis": "Write a highly detailed, 3-4 sentence critical analysis explaining EXACTLY what the ad emphasizes versus what the original landing page is lacking or failing to communicate, and how these variations fix the message mismatch.",
+  "mismatch_analysis": "A critical 3-4 sentence analysis of why the CURRENT page fails to convert the AD traffic.",
   "context": {{
     "industry": "...",
     "intent": "...",
@@ -103,6 +100,10 @@ Output ONLY valid JSON in the exact following structure with NO markdown or expl
   "color_scheme": {{"primary": "#4f46e5", "bg": "#ffffff"}},
   "variations": [
     {{
+      "variation_number": 1,
+      "change_log": [
+        {{"change": "...", "reason": "..."}}
+      ],
       "hero": {{"badge": "...", "headline": "...", "subheadline": "...", "cta": "...", "image_keyword": "..."}},
       "benefits": [ {{"title": "...", "description": "...", "icon": "..."}} ],
       "social_proof": {{

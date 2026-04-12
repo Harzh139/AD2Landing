@@ -71,7 +71,8 @@ async def generate_page(
             html_variations.append({
                 "variation_number": i + 1,
                 "html": html,
-                "mismatch_analysis": generation_data.get("mismatch_analysis", "")
+                "mismatch_analysis": generation_data.get("mismatch_analysis", ""),
+                "change_log": variation.get("change_log", [])
             })
 
         return {

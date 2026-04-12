@@ -110,7 +110,16 @@
                         <h4>AI Ad Analysis</h4>
                         <button id="minimize-panel-btn" title="Minimize Panel"><i class="fa-solid fa-chevron-down"></i></button>
                     </div>
-                    <pre id="analysis-json"></pre>
+                    <div id="analysis-tabs">
+                        <button class="analysis-tab active" data-target="analysis-json-container">Analysis</button>
+                        <button class="analysis-tab" data-target="optimization-log-container">Optimizations</button>
+                    </div>
+                    <div id="analysis-json-container" class="analysis-content">
+                        <pre id="analysis-json"></pre>
+                    </div>
+                    <div id="optimization-log-container" class="analysis-content hidden">
+                        <ul id="optimization-log"></ul>
+                    </div>
                 </div>
                 
                 <div class="iframe-container desktop" id="iframe-container">

@@ -170,6 +170,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    const analysisTabs = document.querySelectorAll('.analysis-tab');
+    const analysisContents = document.querySelectorAll('.analysis-content');
+    const optimizationLogList = document.getElementById('optimization-log');
+
+    // Analysis Tab switching
+    analysisTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            analysisTabs.forEach(t => t.classList.remove('active'));
+            analysisContents.forEach(c => c.classList.add('hidden'));
+            
+            tab.classList.add('active');
+            document.getElementById(tab.dataset.target).classList.remove('hidden');
+        });
+    });
+
     function renderVariationControls() {
         const toggleContainer = document.getElementById('variation-toggles');
         toggleContainer.innerHTML = '';
@@ -187,9 +202,25 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function setVariation(index) {
-        currentHtmlStr = currentVariations[index].html;
+        const variation = currentVariations[index];
+        currentHtmlStr = variation.html;
         iframe.srcdoc = currentHtmlStr;
         codeOutput.textContent = currentHtmlStr;
+        
+        // Update Optimization Log
+        optimizationLogList.innerHTML = '';
+        if (variation.change_log && variation.change_log.length > 0) {
+            variation.change_log.forEach(item => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <span class="change-text"><i class="fa-solid fa-wand-magic-sparkles"></i> ${item.change}</span>
+                    <span class="reason-text">${item.reason}</span>
+                `;
+                optimizationLogList.appendChild(li);
+            });
+        } else {
+            optimizationLogList.innerHTML = '<li style="color: var(--text-muted); font-size: 11px; text-align: center;">No specific optimization changes logged for this variation.</li>';
+        }
     }
 
     copyBtn.addEventListener('click', () => {

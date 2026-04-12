@@ -444,6 +444,69 @@ iframe {
     transform: rotate(180deg);
 }
 
+#analysis-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 5px;
+}
+
+.analysis-tab {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 5px 0;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.analysis-tab.active {
+    color: var(--primary);
+    border-bottom: 2px solid var(--primary);
+}
+
+#optimization-log {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+#optimization-log li {
+    background: #161921;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+#optimization-log .change-text {
+    display: block;
+    color: var(--text-main);
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+#optimization-log .reason-text {
+    display: block;
+    color: var(--text-muted);
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+#optimization-log .reason-text::before {
+    content: "Reasoning: ";
+    color: var(--primary);
+    font-weight: 700;
+}
+
 #analysis-json {
     font-size: 11px;
     color: var(--success);
@@ -454,6 +517,7 @@ iframe {
     overflow-y: auto;
     white-space: pre-wrap;
     transition: opacity 0.3s;
+    margin: 0;
 }
 
 .analysis-panel.minimized #analysis-json {
