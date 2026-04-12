@@ -217,7 +217,12 @@ def build_landing_page_html(variation_data: dict, tone: str, context: dict, colo
             <p>{hero.get("subheadline", "")}</p>
             <a href="#" class="cta-button">{hero.get("cta", "Get Started")}</a>
             <div class="hero-image-wrap">
-                <img src="{hero.get('hero_image_url') if hero.get('hero_image_url') and hero.get('hero_image_url').startswith('http') else f'https://source.unsplash.com/1200x600/?{keyword}'}" alt="Hero Image">
+                {"".join([
+                    f'<video src="{hero.get("hero_media", {}).get("url")}" poster="{hero.get("hero_media", {}).get("poster", "")}" autoplay muted loop playsinline></video>' 
+                    if hero.get("hero_media", {}).get("type") == "video" 
+                    else f'<img src="{hero.get("hero_media", {}).get("url")}" alt="Hero Media">' 
+                ]) if hero.get("hero_media") and hero.get("hero_media", {}).get("url") and hero.get("hero_media", {}).get("url").startswith("http") 
+                   else f'<img src="https://source.unsplash.com/1200x600/?{hero.get("image_keyword", "business")}" alt="Hero Image">'}
             </div>
         </div>
     </section>

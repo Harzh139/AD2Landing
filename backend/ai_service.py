@@ -85,7 +85,7 @@ TASK REQUIREMENTS:
 2. Identify 3-4 specific "Optimized Variations" where each variation is an incremental improvement over the original.
 3. For each variation, you MUST provide:
    - Updated content (Hero, Benefits, Social Proof, CTA, etc.) grounded in original data but improved.
-   - If available in 'images' list, choose the most relevant 'url' for 'hero_image_url'.
+   - If available in 'media' list, choose the most relevant media object (url, type, etc.) and save it in 'hero_media'.
    - A list of specific changes made (e.g., "Changed headline from 'Welcome' to 'Get 20% Off Now'").
    - CRO Reasoning for each change (e.g., "Aligns with the 'discount' intent of the ad creative").
 
@@ -111,7 +111,11 @@ Output ONLY valid JSON in the following structure:
         "subheadline": "...", 
         "cta": "...", 
         "image_keyword": "...",
-        "hero_image_url": "URL from images list if relevant"
+        "hero_media": {{
+           "url": "...",
+           "type": "image|gif|video",
+           "poster": "..."
+        }}
       }},
       "benefits": [ {{"title": "...", "description": "...", "icon": "..."}} ],
       "social_proof": {{
