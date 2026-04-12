@@ -78,13 +78,15 @@ Existing Landing Page Content (Scraped Data):
 Tone requested: {tone_selector}
 
 CRITICAL GOAL:
-Do NOT create a brand new page from scratch. Instead, ENHANCE the existing content. Improve headlines, adjust the tone to match the ad's intent, add urgency, and highlight the benefits that specifically appeal to the ad's audience.
+You are NOT a page builder. You are a CRO Specialist.
+Your job is to SURGICALLY MODIFY the existing page elements (Headlines, CTAs, Subheadings, Benefit Bullets) detected in 'scraped_data' to align with the ad's messaging.
+The output should maintain the structure of the original page but with high-converting, ad-matched copy.
 
 TASK REQUIREMENTS:
-1. Maintain the "Core Identity" of the existing page but improve every element for higher conversion.
+1. IMPROVE every element for higher conversion while keeping the brand's core identity.
 2. Identify EXACTLY 3 (three) specific "Optimized Variations". No more, no less.
 3. For each variation, you MUST:
-   - Provide updated copy grounded in the original page content but improved for the ad's context.
+   - Provide "Optimized Copy" for the specific elements found in the original page (Headlines, Subheadlines, CTAs, Benefits).
    - MANDATORY: Search the 'media' list in 'scraped_data'. Pick the most relevant object (image, gif, or video) to represent the product/offer in the Hero section.
    - Assign this object to 'hero_media' in the JSON.
    - If no media is found in the list, leave 'hero_media' empty and use 'image_keyword'.

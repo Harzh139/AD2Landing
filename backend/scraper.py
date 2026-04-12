@@ -16,7 +16,8 @@ def scrape_landing_page(url: str) -> dict:
         
         response = requests.get(url, headers=headers, timeout=15)
         response.raise_for_status()
-        soup = BeautifulSoup(response.text, 'html.parser')
+        raw_html = response.text
+        soup = BeautifulSoup(raw_html, 'html.parser')
 
         # Clean script and style elements
         for script in soup(["script", "style"]):
@@ -83,7 +84,8 @@ def scrape_landing_page(url: str) -> dict:
             "headings": headings[:20],
             "paragraphs": paragraphs[:20],
             "ctas": list(set(ctas))[:10],
-            "media": media[:30]
+            "media": media[:30],
+            "raw_html": raw_html
         }
     except Exception as e:
         print(f"Scrape error for {url}: {e}")

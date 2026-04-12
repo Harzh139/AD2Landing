@@ -78,7 +78,8 @@ async def generate_page(
         return {
             "success": True,
             "ad_analysis": ad_analysis,
-            "variations": html_variations
+            "variations": html_variations,
+            "original_html": scraped_data.get("raw_html", "")
         }
 
     except Exception as e:
