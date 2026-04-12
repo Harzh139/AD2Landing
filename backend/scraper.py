@@ -37,11 +37,34 @@ def scrape_landing_page(url: str) -> dict:
             if text and len(text) < 30:
                 ctas.append(text)
 
+        # Extract images
+        images = []
+        from urllib.parse import urljoin
+        for img in soup.find_all('img'):
+            src = img.get('src')
+            if src:
+                # Filter out small icons/pixels
+                width = img.get('width', '100')
+                height = img.get('height', '100')
+                try:
+                    if int(width.replace('px','')) < 50 or int(height.replace('px','')) < 50:
+                        continue
+                except:
+                    pass
+                
+                absolute_url = urljoin(url, src)
+                if absolute_url.startswith('http'):
+                    images.append({
+                        "url": absolute_url,
+                        "alt": img.get('alt', '')
+                    })
+
         return {
             "title": soup.title.string if soup.title else "",
             "headings": headings[:20],
             "paragraphs": paragraphs[:20],
-            "ctas": list(set(ctas))[:10]
+            "ctas": list(set(ctas))[:10],
+            "images": images[:15]
         }
     except Exception as e:
         return {"error": str(e), "title": "", "headings": [], "paragraphs": [], "ctas": []}

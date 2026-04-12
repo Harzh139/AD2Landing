@@ -217,7 +217,7 @@ def build_landing_page_html(variation_data: dict, tone: str, context: dict, colo
             <p>{hero.get("subheadline", "")}</p>
             <a href="#" class="cta-button">{hero.get("cta", "Get Started")}</a>
             <div class="hero-image-wrap">
-                <img src="https://source.unsplash.com/1200x600/?{keyword}" alt="Hero Image">
+                <img src="{hero.get('hero_image_url') if hero.get('hero_image_url') and hero.get('hero_image_url').startswith('http') else f'https://source.unsplash.com/1200x600/?{keyword}'}" alt="Hero Image">
             </div>
         </div>
     </section>
