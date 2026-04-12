@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+groq
+beautifulsoup4
+requests
+python-multipart
+python-dotenv
