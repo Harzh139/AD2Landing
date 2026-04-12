@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Personalized Landing Page Generator</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Input Form -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fa-solid fa-wand-magic-sparkles"></i> Ad2Page</h2>
+                <p>Personalize landing pages instantly</p>
+            </div>
+            
+            <form id="generator-form">
+                <!-- Ad Input Section -->
+                <div class="section-container">
+                    <h3>1. Ad Creative</h3>
+                    <div class="tabs">
+                        <button type="button" class="tab-btn active" data-tab="image"><i class="fa-regular fa-image"></i> Image</button>
+                        <button type="button" class="tab-btn" data-tab="text"><i class="fa-solid fa-align-left"></i> Text</button>
+                        <button type="button" class="tab-btn" data-tab="video"><i class="fa-brands fa-youtube"></i> Video</button>
+                    </div>
+                    
+                    <div class="tab-content active" id="tab-image">
+                        <label class="file-upload" id="file-drop-area">
+                            <input type="file" id="ad_image" accept="image/jpeg, image/png">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            <span id="file-name">Drag & drop or click to upload</span>
+                        </label>
+                    </div>
+                    
+                    <div class="tab-content" id="tab-text">
+                        <textarea id="ad_text" placeholder="Paste your Facebook/Google Ad text here..." rows="4"></textarea>
+                    </div>
+                    
+                    <div class="tab-content" id="tab-video">
+                        <input type="url" id="ad_video" placeholder="https://youtube.com/...">
+                    </div>
+                </div>
+
+                <!-- Landing Page URL Section -->
+                <div class="section-container">
+                    <h3>2. Target Landing Page</h3>
+                    <div class="input-group">
+                        <i class="fa-solid fa-link"></i>
+                        <input type="url" id="landing_url" placeholder="https://yourwebsite.com" required>
+                    </div>
+                </div>
+
+                <!-- Settings -->
+                <div class="section-container">
+                    <h3>3. Tone & Style</h3>
+                    <div class="select-wrapper">
+                        <select id="tone">
+                            <option value="professional">Professional & Direct</option>
+                            <option value="conversational">Conversational & Friendly</option>
+                            <option value="urgent">Urgent & Aggressive (FOMO)</option>
+                            <option value="luxury">Luxury & Premium</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="generate-btn" id="generate-btn">
+                    <span>Generate Page</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </form>
+            
+            <div id="status-message" class="status-message hidden">
+                <div class="spinner"></div>
+                <p id="status-text">Analyzing Ad Creative...</p>
+            </div>
+        </aside>
+
+        <!-- Main Preview Area -->
+        <main class="preview-area">
+            <header class="preview-header">
+                <div class="header-left">
+                    <div class="browser-dots">
+                        <span></span><span></span><span></span>
+                    </div>
+                    <div class="device-toggles">
+                        <button class="toggle-btn active" data-device="desktop"><i class="fa-solid fa-desktop"></i></button>
+                        <button class="toggle-btn" data-device="mobile"><i class="fa-solid fa-mobile-screen"></i></button>
+                    </div>
+                </div>
+                
+                <div class="variation-toggles" id="variation-toggles">
+                    <!-- Javascript will inject var-btns here -->
+                </div>
+
+                <div class="header-right">
+                    <div class="view-toggles">
+                        <button class="view-btn active" data-view="preview"><i class="fa-solid fa-eye"></i> Preview</button>
+                        <button class="view-btn" data-view="code"><i class="fa-solid fa-code"></i> Code</button>
+                    </div>
+                </div>
+            </header>
+            
+            <div class="preview-workspace">
+                <!-- JSON output modal/panel (optional) visually hidden initially -->
+                <div class="analysis-panel hidden" id="analysis-panel">
+                    <div class="panel-header">
+                        <h4>AI Ad Analysis</h4>
+                        <button id="minimize-panel-btn" title="Minimize Panel"><i class="fa-solid fa-chevron-down"></i></button>
+                    </div>
+                    <pre id="analysis-json"></pre>
+                </div>
+                
+                <div class="iframe-container desktop" id="iframe-container">
+                    <iframe id="preview-frame" sandbox="allow-scripts allow-same-origin" srcdoc="
+                        <html>
+                            <head><style>
+                                body { font-family: 'Outfit', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: #1d212b; color: #a1a1aa; text-align: center;}
+                                h1 { font-size: 24px; font-weight: 500; }
+                                svg { width: 64px; height: 64px; margin-bottom: 16px; opacity: 0.5; }
+                            </style></head>
+                            <body>
+                                <div>
+                                    <svg fill='none' stroke='currentColor' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z'></path></svg>
+                                    <h1>Input your details to generate a preview</h1>
+                                </div>
+                            </body>
+                        </html>
+                    "></iframe>
+                </div>
+
+                <div class="code-container hidden" id="code-container">
+                    <div class="code-header">
+                        <span class="file-name"><i class="fa-brands fa-html5"></i> index.html</span>
+                        <button id="copy-btn" class="copy-code-btn"><i class="fa-regular fa-copy"></i> Copy Code</button>
+                    </div>
+                    <pre><code id="code-output"></code></pre>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
