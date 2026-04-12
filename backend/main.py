@@ -83,4 +83,6 @@ async def generate_page(
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+    # Use the string "main:app" format if you ever need reload=True
+    # For production, we use the app object and reload=False
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=False)
