@@ -1,270 +1,468 @@
-def build_landing_page_html(variation_data: dict, tone: str, context: dict, colors: dict) -> str:
-    hero = variation_data.get("hero", {})
-    benefits = variation_data.get("benefits", [])
-    social_proof = variation_data.get("social_proof", {})
-    pricing = variation_data.get("pricing_or_value", {})
-    features = variation_data.get("product_features", {})
+"""
+template_builder.py
+===================
+PHILOSOPHY: We ENHANCE the real scraped HTML — we do NOT build new pages.
+
+Approach:
+1. Take the raw scraped HTML from the landing page
+2. Parse it with BeautifulSoup
+3. Surgically inject:
+   - Ad-matched hero copy (h1, h2, subheadlines)
+   - Personalized CTAs
+   - Urgency banner (prepended to body)
+   - Subtle CSS overlay for tone/color nudge
+   - Sticky social-proof bar
+4. Return the modified real HTML — preserving all layout, images, nav, footer
+"""
+
+from bs4 import BeautifulSoup
+import re
+
+
+# ─── Color palettes per tone ────────────────────────────────────────────────
+
+TONE_STYLES = {
+    "professional": {
+        "accent":      "#2563eb",
+        "accent_text": "#ffffff",
+        "banner_bg":   "#1e3a8a",
+        "banner_text": "#ffffff",
+        "bar_bg":      "#f0f9ff",
+        "bar_border":  "#2563eb",
+        "bar_text":    "#1e3a8a",
+    },
+    "conversational": {
+        "accent":      "#059669",
+        "accent_text": "#ffffff",
+        "banner_bg":   "#064e3b",
+        "banner_text": "#ecfdf5",
+        "bar_bg":      "#f0fdf4",
+        "bar_border":  "#059669",
+        "bar_text":    "#065f46",
+    },
+    "urgent": {
+        "accent":      "#dc2626",
+        "accent_text": "#ffffff",
+        "banner_bg":   "#7f1d1d",
+        "banner_text": "#fff7ed",
+        "bar_bg":      "#fff1f2",
+        "bar_border":  "#dc2626",
+        "bar_text":    "#991b1b",
+    },
+    "luxury": {
+        "accent":      "#b8972a",
+        "accent_text": "#000000",
+        "banner_bg":   "#1a1208",
+        "banner_text": "#d4af37",
+        "bar_bg":      "#0f0a00",
+        "bar_border":  "#b8972a",
+        "bar_text":    "#d4af37",
+    },
+}
+
+FALLBACK = TONE_STYLES["professional"]
+
+
+def get_tone_styles(tone: str) -> dict:
+    for key in TONE_STYLES:
+        if key in tone.lower():
+            return TONE_STYLES[key]
+    return FALLBACK
+
+
+# ─── Main entry point ────────────────────────────────────────────────────────
+
+def build_landing_page_html(
+    variation_data: dict,
+    tone: str,
+    context: dict,
+    colors: dict,
+    raw_html: str = "",
+) -> str:
+    """
+    If raw_html is available: enhance it in-place.
+    Fallback: build a minimal standalone page (last resort only).
+    """
+    if raw_html and len(raw_html) > 500:
+        return _enhance_existing_page(variation_data, tone, raw_html)
+    else:
+        return _build_fallback_page(variation_data, tone, colors)
+
+
+# ─── Core: enhance the real page ────────────────────────────────────────────
+
+def _enhance_existing_page(variation_data: dict, tone: str, raw_html: str) -> str:
+    hero      = variation_data.get("hero", {})
+    benefits  = variation_data.get("benefits", [])
     final_cta = variation_data.get("final_cta", {})
-    
-    primary_color = colors.get("primary", "#4f46e5")
-    bg_color = colors.get("bg", "#ffffff")
-    
-    # Tone-based styling extraction
-    is_luxury = "luxury" in tone.lower()
-    is_urgent = "urgent" in tone.lower()
-    is_friendly = "conversational" in tone.lower()
+    ts        = get_tone_styles(tone)
 
-    # Theme Overrides
-    if is_luxury:
-        primary_color = "#d4af37" # Gold
-        bg_color = "#000000"
-        text_heading = "#ffffff"
-        text_body = "#a3a3a3"
-        card_bg = "#111111"
-        font_family = "'Playfair Display', serif"
-        border_radius = "0px"
-        button_radius = "0px"
-        font_import = "family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400"
-        body_font = "'Lato', sans-serif"
-    elif is_urgent:
-        primary_color = "#ef4444" # Red
-        bg_color = "#ffffff"
-        text_heading = "#111827"
-        text_body = "#374151"
-        card_bg = "#fef2f2"
-        font_family = "'Impact', 'Arial Black', sans-serif"
-        border_radius = "8px"
-        button_radius = "4px"
-        font_import = "family=Oswald:wght@500;700&family=Roboto:wght@400;700"
-        body_font = "'Roboto', sans-serif"
-        font_family = "'Oswald', sans-serif"
-    elif is_friendly:
-        primary_color = "#10b981" # Green
-        bg_color = "#fefce8"      # Light yellow/cream
-        text_heading = "#064e3b"
-        text_body = "#047857"
-        card_bg = "#ffffff"
-        font_family = "'Nunito', sans-serif"
-        border_radius = "32px"
-        button_radius = "32px"
-        font_import = "family=Nunito:wght@400;700;800&family=Quicksand:wght@500;700"
-        body_font = "'Quicksand', sans-serif"
-    else: # Professional
-        primary_color = "#2563eb" # Blue
-        bg_color = "#ffffff"
-        text_heading = "#0f172a"
-        text_body = "#475569"
-        card_bg = "#f8fafc"
-        font_family = "'Outfit', sans-serif"
-        border_radius = "16px"
-        button_radius = "8px"
-        font_import = "family=Outfit:wght@400;600;800&family=Inter:wght@400;500"
-        body_font = "'Inter', sans-serif"
+    soup = BeautifulSoup(raw_html, "html.parser")
 
-    # HTML Blocks
-    badge_html = f'<div class="urgency-badge">{hero.get("badge", "")}</div>' if hero.get("badge") else ""
-    if is_urgent and not badge_html:
-        badge_html = '<div class="urgency-badge">⚠️ ENDING SOON ⚠️</div>'
-        
-    keyword = hero.get("image_keyword", "business")
-    
-    # Benefits
-    benefits_html = ""
-    for benefit in benefits:
-        benefits_html += f"""
-        <div class="benefit-card">
-            <div class="icon-wrap">⭐️</div>
-            <h3>{benefit.get("title", "")}</h3>
-            <p>{benefit.get("description", "")}</p>
-        </div>
-        """
-        
-    # Social Proof
-    sp_type = social_proof.get("type", "b2c")
-    if sp_type == "b2b":
-        logos = "".join([f'<div class="logo-box">{l}</div>' for l in social_proof.get("logos", ["Acme Corp"])])
-        sp_html = f"""
-        <h2>Trusted by {social_proof.get("metrics", "Top Brands")}</h2>
-        <div class="logos-grid">{logos}</div>
-        """
-    else:
-        tests = social_proof.get("testimonials", [{"author":"Satisfied Customer", "text":"Great experience!"}])
-        test_html = "".join([f'<div class="test-card"><p>"{t.get("text", "")}"</p><h4> {t.get("author", "")}</h4></div>' for t in tests])
-        sp_html = f"""
-        <h2>What People Are Saying</h2>
-        <div class="tests-grid">{test_html}</div>
-        """
+    # ── 1. Inject <base> so relative links/images still work ──────────────
+    head = soup.find("head")
+    if head and not soup.find("base"):
+        base_tag = soup.new_tag("base", target="_blank")
+        head.insert(0, base_tag)
 
-    # Pricing
-    price_type = pricing.get("type", "service_outcome")
-    if price_type == "discount":
-        price_html = f"""
-        <div class="pricing-card">
-            <h3>Exclusive Offer</h3>
-            <div class="price">
-                <span class="old-price">{pricing.get("old_price", "Regular Price")}</span>
-                <span class="new-price">{pricing.get("new_price", "Discount Price")}</span>
-            </div>
-            <a href="#" class="cta-button">{hero.get("cta", "Buy Now")}</a>
-        </div>
-        """
-    elif price_type == "saas_plan":
-        feats = "".join([f'<li>✓ {f}</li>' for f in pricing.get("plan_features", ["Full Access"])])
-        price_html = f"""
-        <div class="pricing-card">
-            <h3>{pricing.get("plan_name", "Pro Plan")}</h3>
-            <div class="price"><span class="new-price">{pricing.get("plan_price", "Pricing")}</span></div>
-            <ul class="plan-features">{feats}</ul>
-            <a href="#" class="cta-button">Start Free Trial</a>
-        </div>
-        """
-    else:
-        price_html = f"""
-        <div class="value-card">
-            <h3>{pricing.get("outcome_title", "Transform Your Results")}</h3>
-            <p>{pricing.get("outcome_desc", "Take the next step today.")}</p>
-        </div>
-        """
+    # ── 2. Inject our enhancement CSS ─────────────────────────────────────
+    style_tag = soup.new_tag("style")
+    style_tag.string = _enhancement_css(ts)
+    if head:
+        head.append(style_tag)
 
-    # Features
-    feat_type = features.get("type", "feature_blocks")
-    items_html = ""
-    for item in features.get("items", [{"title": "Feature", "desc": "Details"}]):
-        items_html += f"""
-        <div class="feature-item">
-            <h4>{item.get("title", "")}</h4>
-            <p>{item.get("desc", "")}</p>
-        </div>
-        """
+    body = soup.find("body")
+    if not body:
+        return raw_html   # can't parse, return as-is
 
-    html = f"""<!DOCTYPE html>
+    # ── 3. Prepend urgency/personalisation banner ─────────────────────────
+    badge_text = hero.get("badge", "")
+    headline   = hero.get("headline", "")
+    subhl      = hero.get("subheadline", "")
+    cta_text   = hero.get("cta", "")
+
+    if badge_text or headline:
+        banner = BeautifulSoup(_urgency_banner_html(badge_text, headline, subhl, cta_text, ts), "html.parser")
+        body.insert(0, banner)
+
+    # ── 4. Replace the most prominent H1 with the ad-matched headline ─────
+    if headline:
+        h1 = soup.find("h1")
+        if h1:
+            # Keep any child tags (e.g. <span>, <em>) but change the text node
+            _replace_visible_text(h1, headline)
+
+    # ── 5. Replace the first prominent H2/subheadline ─────────────────────
+    if subhl:
+        # Try an h2 near the top of the page
+        candidates = soup.find_all("h2")
+        if candidates:
+            _replace_visible_text(candidates[0], subhl)
+
+    # ── 6. Enhance CTAs — replace the first 2 primary CTAs ───────────────
+    if cta_text:
+        _enhance_ctas(soup, cta_text, ts)
+
+    # ── 7. Inject social-proof / benefit bar before </body> ──────────────
+    benefit_titles = [b.get("title", "") for b in benefits if b.get("title")]
+    if benefit_titles:
+        bar = BeautifulSoup(_benefit_bar_html(benefit_titles, ts), "html.parser")
+        body.append(bar)
+
+    # ── 8. Inject personalisation script (highlight, countdown if urgent) ─
+    script_tag = soup.new_tag("script")
+    script_tag.string = _personalisation_js(tone, ts)
+    body.append(script_tag)
+
+    return str(soup)
+
+
+# ─── Text replacement helper ─────────────────────────────────────────────────
+
+def _replace_visible_text(tag, new_text: str):
+    """Replace a tag's visible text while preserving inner markup if simple."""
+    # If it's a simple tag with no children tags, just set the string
+    if not tag.find():
+        tag.string = new_text
+        return
+    # Otherwise clear and re-insert as text (preserves tag but loses inner spans)
+    for child in list(tag.children):
+        child.extract()
+    tag.append(new_text)
+
+
+# ─── CTA enhancer ────────────────────────────────────────────────────────────
+
+def _enhance_ctas(soup, cta_text: str, ts: dict):
+    """
+    Find anchor/button tags that look like CTAs (short text, prominent classes)
+    and replace their text + add our accent class.
+    Limit to first 3 so we don't over-change.
+    """
+    cta_keywords = {
+        "shop", "buy", "get", "start", "try", "sign", "join",
+        "learn", "explore", "discover", "order", "subscribe", "book",
+    }
+    changed = 0
+    for tag in soup.find_all(["a", "button"]):
+        if changed >= 3:
+            break
+        text = tag.get_text(strip=True).lower()
+        if not text or len(text) > 60:
+            continue
+        if any(kw in text for kw in cta_keywords):
+            # Replace text, keep href
+            for child in list(tag.children):
+                child.extract()
+            tag.append(cta_text)
+            # Add our class for styling
+            existing = tag.get("class", [])
+            tag["class"] = existing + ["ad2page-cta"]
+            tag["style"] = (
+                f"background:{ts['accent']} !important;"
+                f"color:{ts['accent_text']} !important;"
+                f"border-color:{ts['accent']} !important;"
+                f"font-weight:700 !important;"
+            )
+            changed += 1
+
+
+# ─── HTML fragments ──────────────────────────────────────────────────────────
+
+def _urgency_banner_html(badge: str, headline: str, subhl: str, cta: str, ts: dict) -> str:
+    badge_part = f'<span class="ad2p-badge">{badge}</span>' if badge else ""
+    cta_part   = f'<a href="#" class="ad2p-banner-cta">{cta}</a>' if cta else ""
+    hl_part    = f'<span class="ad2p-hl">{headline}</span>' if headline else ""
+    sub_part   = f'<span class="ad2p-sub">{subhl}</span>' if subhl else ""
+
+    return f"""
+<div id="ad2page-banner">
+  <div class="ad2p-inner">
+    {badge_part}
+    <div class="ad2p-copy">
+      {hl_part}
+      {sub_part}
+    </div>
+    {cta_part}
+  </div>
+</div>
+"""
+
+
+def _benefit_bar_html(titles: list, ts: dict) -> str:
+    items = "".join(
+        f'<div class="ad2p-bar-item"><span class="ad2p-check">✓</span>{t}</div>'
+        for t in titles[:4]
+    )
+    return f"""
+<div id="ad2page-bar">
+  <div class="ad2p-bar-inner">
+    {items}
+  </div>
+</div>
+"""
+
+
+# ─── CSS ─────────────────────────────────────────────────────────────────────
+
+def _enhancement_css(ts: dict) -> str:
+    return f"""
+/* ═══ Ad2Page Enhancement Layer ═══ */
+#ad2page-banner {{
+  width: 100%;
+  background: {ts['banner_bg']};
+  color: {ts['banner_text']};
+  padding: 14px 20px;
+  position: relative;
+  z-index: 99999;
+  box-sizing: border-box;
+  border-bottom: 2px solid {ts['accent']};
+}}
+.ad2p-inner {{
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  justify-content: center;
+}}
+.ad2p-badge {{
+  background: {ts['accent']};
+  color: {ts['accent_text']};
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}}
+.ad2p-copy {{
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: center;
+}}
+.ad2p-hl {{
+  font-size: 15px;
+  font-weight: 700;
+  color: {ts['banner_text']};
+  line-height: 1.3;
+}}
+.ad2p-sub {{
+  font-size: 12px;
+  opacity: 0.75;
+  color: {ts['banner_text']};
+}}
+.ad2p-banner-cta {{
+  background: {ts['accent']};
+  color: {ts['accent_text']};
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 20px;
+  border-radius: 6px;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: filter .2s;
+}}
+.ad2p-banner-cta:hover {{ filter: brightness(1.15); }}
+
+/* Benefit bar */
+#ad2page-bar {{
+  width: 100%;
+  background: {ts['bar_bg']};
+  border-top: 2px solid {ts['bar_border']};
+  padding: 14px 20px;
+  box-sizing: border-box;
+  margin-top: 40px;
+}}
+.ad2p-bar-inner {{
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  gap: 32px;
+  flex-wrap: wrap;
+  justify-content: center;
+}}
+.ad2p-bar-item {{
+  font-size: 13px;
+  font-weight: 600;
+  color: {ts['bar_text']};
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}}
+.ad2p-check {{
+  background: {ts['accent']};
+  color: {ts['accent_text']};
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  flex-shrink: 0;
+}}
+
+/* CTA pulse on urgent */
+.ad2page-cta {{
+  animation: ad2p-pulse 2s ease infinite;
+}}
+@keyframes ad2p-pulse {{
+  0%, 100% {{ box-shadow: 0 0 0 0 {ts['accent']}55; }}
+  50%       {{ box-shadow: 0 0 0 8px {ts['accent']}00; }}
+}}
+
+@media (max-width: 600px) {{
+  .ad2p-inner {{ flex-direction: column; text-align: center; }}
+  .ad2p-bar-inner {{ gap: 16px; }}
+}}
+"""
+
+
+# ─── JS ──────────────────────────────────────────────────────────────────────
+
+def _personalisation_js(tone: str, ts: dict) -> str:
+    countdown_code = ""
+    if "urgent" in tone.lower():
+        countdown_code = """
+  // Countdown timer injected by Ad2Page
+  var end = Date.now() + 15 * 60 * 1000; // 15 min
+  var el  = document.createElement('div');
+  el.id   = 'ad2p-countdown';
+  el.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#dc2626;color:#fff;'
+    + 'padding:12px 20px;border-radius:10px;font-size:14px;font-weight:700;z-index:99999;'
+    + 'box-shadow:0 4px 20px rgba(220,38,38,.4);font-family:monospace;';
+  document.body.appendChild(el);
+  (function tick() {
+    var rem = end - Date.now();
+    if (rem <= 0) { el.textContent = '⏰ Offer Expired'; return; }
+    var m = Math.floor(rem/60000), s = Math.floor((rem%60000)/1000);
+    el.textContent = '⚡ Offer ends: ' + m + ':' + (s<10?'0'+s:s);
+    setTimeout(tick, 1000);
+  })();
+"""
+
+    return f"""
+(function() {{
+  // Ad2Page personalisation layer
+  {countdown_code}
+
+  // Smooth-scroll all ad2p CTAs
+  document.querySelectorAll('.ad2p-banner-cta').forEach(function(a) {{
+    a.addEventListener('click', function(e) {{
+      e.preventDefault();
+      var target = document.querySelector('form, .cta-section, [data-section="cta"], #cta');
+      if (target) target.scrollIntoView({{ behavior:'smooth' }});
+      else window.scrollTo({{ top: document.body.scrollHeight, behavior:'smooth' }});
+    }});
+  }});
+}})();
+"""
+
+
+# ─── Fallback standalone page (only if no raw_html) ─────────────────────────
+
+def _build_fallback_page(variation_data: dict, tone: str, colors: dict) -> str:
+    """Minimal, clean standalone page — used ONLY when scraping fails."""
+    hero      = variation_data.get("hero", {})
+    benefits  = variation_data.get("benefits", [])
+    final_cta = variation_data.get("final_cta", {})
+    ts        = get_tone_styles(tone)
+
+    benefits_html = "".join(
+        f"""<div class="card">
+              <div class="icon">✦</div>
+              <h3>{b.get('title','')}</h3>
+              <p>{b.get('description','')}</p>
+           </div>"""
+        for b in benefits
+    )
+
+    return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?{font_import}&display=swap" rel="stylesheet">
-    <title>{hero.get("headline", "Landing Page")}</title>
-    <style>
-        :root {{
-            --primary: {primary_color};
-            --bg: {bg_color};
-            --text-heading: {text_heading};
-            --text-body: {text_body};
-            --card-bg: {card_bg};
-            --spacing: 80px;
-            --border-rad: {border_radius};
-            --btn-rad: {button_radius};
-            --font-head: {font_family};
-            --font-body: {body_font};
-        }}
-        * {{ margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font-body); }}
-        body {{ background-color: var(--bg); color: var(--text-body); line-height: 1.6; overflow-x: hidden; }}
-        h1, h2, h3, h4 {{ font-family: var(--font-head); color: var(--text-heading); }}
-        .container {{ max-width: 1200px; margin: 0 auto; padding: 0 5%; }}
-        
-        .hero {{ padding: 120px 0 60px; text-align: center; border-bottom: 1px solid rgba(0,0,0,0.05); }}
-        .urgency-badge {{ display: inline-block; background: var(--primary); color: var(--bg); padding: 8px 20px; border-radius: var(--btn-rad); font-size: 14px; font-weight: bold; margin-bottom: 24px; letter-spacing: 1px; text-transform: uppercase; }}
-        .hero h1 {{ font-size: clamp(40px, 5vw, 68px); line-height: 1.1; margin-bottom: 24px; }}
-        .hero p {{ font-size: 22px; max-width: 700px; margin: 0 auto 40px; opacity: 0.9; }}
-        .cta-button {{ display: inline-block; background: var(--primary); color: {bg_color}; padding: 18px 45px; border-radius: var(--btn-rad); font-size: 18px; font-weight: bold; text-decoration: none; transition: transform 0.3s; font-family: var(--font-head); text-transform: uppercase; letter-spacing: 1px; border: 2px solid var(--primary); }}
-        .cta-button:hover {{ transform: translateY(-3px); filter: brightness(1.2); }}
-        
-        .hero-image-wrap {{ max-width: 900px; margin: 50px auto 0; border-radius: var(--border-rad); overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); border: 2px solid var(--card-bg); }}
-        .hero-image-wrap img {{ width: 100%; display: block; }}
-
-        .benefits {{ padding: var(--spacing) 0; }}
-        .grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 32px; margin-top: 48px; }}
-        .benefit-card {{ background: var(--card-bg); padding: 40px 32px; border-radius: var(--border-rad); text-align: center; border: 1px solid rgba(0,0,0,0.05); }}
-        .icon-wrap {{ font-size: 40px; margin-bottom: 20px; }}
-        .benefit-card h3 {{ font-size: 24px; margin-bottom: 15px; }}
-        
-        .features {{ padding: var(--spacing) 0; background: var(--card-bg); border-top: 1px solid rgba(0,0,0,0.05); border-bottom: 1px solid rgba(0,0,0,0.05); }}
-        .feature-item {{ background: var(--bg); padding: 35px; border-radius: var(--border-rad); box-shadow: 0 4px 15px rgba(0,0,0,0.03); }}
-        .feature-item h4 {{ font-size: 20px; margin-bottom: 12px; color: var(--primary); font-family: var(--font-head); }}
-
-        .pricing-section {{ padding: var(--spacing) 0; text-align: center; }}
-        .pricing-card {{ max-width: 400px; margin: 0 auto; background: var(--bg); padding: 40px; border-radius: var(--border-rad); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); border: 4px solid var(--primary); }}
-        .old-price {{ text-decoration: line-through; color: var(--text-body); font-size: 24px; margin-right: 15px; opacity: 0.6; }}
-        .new-price {{ font-size: 56px; font-weight: bold; color: var(--text-heading); }}
-        .plan-features {{ list-style: none; margin: 30px 0; text-align: left; }}
-        .plan-features li {{ margin-bottom: 15px; font-size: 18px; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 10px; }}
-
-        .value-card {{ max-width: 600px; margin: 0 auto; background: var(--primary); color: {bg_color}; padding: 50px; border-radius: var(--border-rad); }}
-        .value-card h3 {{ color: {bg_color}; font-size: 32px; margin-bottom: 20px; }}
-        .value-card p {{ color: {bg_color}; opacity: 0.9; font-size: 20px; }}
-
-        .social-proof {{ padding: var(--spacing) 0; background: var(--text-heading); color: var(--bg); text-align: center; }}
-        .social-proof h2 {{ color: var(--bg); margin-bottom: 50px; font-size: 36px; }}
-        .logos-grid {{ display: flex; justify-content: center; gap: 50px; flex-wrap: wrap; opacity: 0.7; }}
-        .logo-box {{ font-size: 28px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; }}
-        .tests-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 32px; }}
-        .test-card {{ background: rgba(255,255,255,0.05); padding: 40px; border-radius: var(--border-rad); text-align: left; border: 1px solid rgba(255,255,255,0.1); }}
-        .test-card p {{ font-style: italic; margin-bottom: 20px; font-size: 18px; line-height: 1.8; }}
-        .test-card h4 {{ color: var(--primary); font-size: 18px; }}
-
-        .final-cta {{ padding: calc(var(--spacing) * 1.5) 0; text-align: center; }}
-        .final-cta h2 {{ font-size: 54px; margin-bottom: 24px; }}
-        
-        @media (max-width: 768px) {{ :root {{ --spacing: 60px; }} .hero h1 {{ font-size: 40px; }} }}
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{hero.get('headline','Landing Page')}</title>
+<style>
+  *{{margin:0;padding:0;box-sizing:border-box}}
+  body{{font-family:system-ui,sans-serif;background:#fff;color:#111;line-height:1.6}}
+  .banner{{background:{ts['banner_bg']};color:{ts['banner_text']};text-align:center;padding:10px 20px;font-size:13px;font-weight:700;letter-spacing:.05em}}
+  .hero{{max-width:900px;margin:80px auto;text-align:center;padding:0 24px}}
+  .badge{{display:inline-block;background:{ts['accent']};color:{ts['accent_text']};padding:6px 18px;border-radius:20px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:24px}}
+  h1{{font-size:clamp(32px,5vw,60px);line-height:1.1;margin-bottom:20px;font-weight:800}}
+  .sub{{font-size:20px;color:#555;margin-bottom:36px}}
+  .cta{{display:inline-block;background:{ts['accent']};color:{ts['accent_text']};padding:16px 40px;border-radius:8px;font-size:17px;font-weight:700;text-decoration:none;letter-spacing:.02em}}
+  .cta:hover{{filter:brightness(1.1)}}
+  .cards{{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:24px;max-width:900px;margin:60px auto;padding:0 24px}}
+  .card{{background:#f8f9fa;border-radius:12px;padding:32px;text-align:center}}
+  .icon{{font-size:28px;margin-bottom:12px;color:{ts['accent']}}}
+  .card h3{{font-size:18px;margin-bottom:8px}}
+  .card p{{font-size:14px;color:#666}}
+  .fcta{{text-align:center;padding:60px 24px;background:{ts['banner_bg']}}}
+  .fcta h2{{color:{ts['banner_text']};font-size:36px;margin-bottom:24px}}
+  .note{{font-size:11px;color:#aaa;text-align:center;padding:12px;border-top:1px solid #eee}}
+</style>
 </head>
 <body>
-
-    <section class="hero">
-        <div class="container">
-            {badge_html}
-            <h1>{hero.get("headline", "")}</h1>
-            <p>{hero.get("subheadline", "")}</p>
-            <a href="#" class="cta-button">{hero.get("cta", "Get Started")}</a>
-            <div class="hero-image-wrap">
-                {"".join([
-                    f'<video src="{hero.get("hero_media", {}).get("url")}" poster="{hero.get("hero_media", {}).get("poster", "")}" autoplay muted loop playsinline></video>' 
-                    if hero.get("hero_media", {}).get("type") == "video" 
-                    else f'<img src="{hero.get("hero_media", {}).get("url")}" alt="Hero Media">' 
-                ]) if hero.get("hero_media") and hero.get("hero_media", {}).get("url") and hero.get("hero_media", {}).get("url").startswith("http") 
-                   else f'<img src="https://source.unsplash.com/1200x600/?{hero.get("image_keyword", "business")}" alt="Hero Image">'}
-            </div>
-        </div>
-    </section>
-
-    <section class="benefits">
-        <div class="container">
-            <h2 style="text-align: center; font-size: 42px;">Why Choose Us</h2>
-            <div class="grid">
-                {benefits_html}
-            </div>
-        </div>
-    </section>
-
-    <section class="features">
-        <div class="container">
-            <h2 style="text-align: center; margin-bottom: 50px; font-size: 42px;">Key Advantages</h2>
-            <div class="grid">
-                {items_html}
-            </div>
-        </div>
-    </section>
-
-    <section class="social-proof">
-        <div class="container">
-            {sp_html}
-        </div>
-    </section>
-
-    <section class="pricing-section">
-        <div class="container">
-            {price_html}
-        </div>
-    </section>
-
-    <section class="final-cta">
-        <div class="container">
-            <h2>{final_cta.get("headline", "Take Action Now")}</h2>
-            <p style="margin-bottom: 40px; font-size: 22px; opacity: 0.8;">Join thousands of others taking action today.</p>
-            <a href="#" class="cta-button">{final_cta.get("cta", "Get Started")}</a>
-        </div>
-    </section>
-
+<div class="banner">⚡ Personalized page — scraping unavailable for this URL</div>
+<div class="hero">
+  <div class="badge">{hero.get('badge','Special Offer')}</div>
+  <h1>{hero.get('headline','Your Personalized Headline')}</h1>
+  <p class="sub">{hero.get('subheadline','')}</p>
+  <a href="#" class="cta">{hero.get('cta','Get Started')}</a>
+</div>
+<div class="cards">{benefits_html}</div>
+<div class="fcta">
+  <h2>{final_cta.get('headline','Ready to get started?')}</h2>
+  <a href="#" class="cta">{final_cta.get('cta','Take Action Now')}</a>
+</div>
+<p class="note">Ad2Page fallback mode — target URL could not be scraped (bot protection, auth wall, etc.)</p>
 </body>
 </html>"""
-    return html

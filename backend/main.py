@@ -1,14 +1,12 @@
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 import base64
 
 from scraper import scrape_landing_page
 from ai_service import LlmService
-
 from template_builder import build_landing_page_html
 
-app = FastAPI(title="Ad to Landing Page Personalizer")
+app = FastAPI(title="Ad2Page — CRO Personalizer")
 
 app.add_middleware(
     CORSMiddleware,
@@ -20,11 +18,6 @@ app.add_middleware(
 
 llm = LlmService()
 
-class GenerateRequest(BaseModel):
-    landing_url: str
-    ad_text: str = None
-    ad_video: str = None
-    tone: str = "professional"
 
 @app.post("/api/generate")
 async def generate_page(
@@ -32,60 +25,68 @@ async def generate_page(
     ad_text: str = Form(""),
     ad_video: str = Form(""),
     tone: str = Form("professional"),
-    file: UploadFile = File(None)
+    file: UploadFile = File(None),
 ):
-    print("Received request for url:", landing_url)
-    try:
-        # 1. Analyze Ad
-        ad_analysis = None
-        if file and file.filename:
-            contents = await file.read()
-            base64_img = base64.b64encode(contents).decode('utf-8')
-            ad_analysis = llm.analyze_ad_image(base64_img)
-        elif ad_text.strip():
-            ad_analysis = llm.analyze_ad_text(ad_text)
-        elif ad_video.strip():
-            ad_analysis = llm.analyze_ad_text(f"Ad is a video at this link: {ad_video}")
-        else:
-            raise HTTPException(status_code=400, detail="Must provide either Ad image, text, or video link.")
-            
-        if ad_analysis and 'error' in ad_analysis:
-            raise HTTPException(status_code=500, detail=ad_analysis['error'])
+    print(f"Request: url={landing_url} tone={tone}")
 
-        # 2. Scrape Landing Page
-        scraped_data = scrape_landing_page(landing_url)
+    # 1. Analyze the ad creative
+    ad_analysis = None
+    if file and file.filename:
+        contents = await file.read()
+        b64 = base64.b64encode(contents).decode("utf-8")
+        ad_analysis = llm.analyze_ad_image(b64)
+    elif ad_text.strip():
+        ad_analysis = llm.analyze_ad_text(ad_text)
+    elif ad_video.strip():
+        ad_analysis = llm.analyze_ad_text(f"Ad is a video at: {ad_video}")
+    else:
+        raise HTTPException(400, "Provide an ad image, text, or video link.")
 
-        # 3. Generate structured variations
-        generation_data = llm.generate_landing_page(ad_analysis, scraped_data, tone)
-        
-        if "error" in generation_data:
-            raise HTTPException(status_code=500, detail=generation_data["error"])
+    if ad_analysis and "error" in ad_analysis:
+        raise HTTPException(500, ad_analysis["error"])
 
-        # 4. Build HTML for each variation
-        html_variations = []
-        context = generation_data.get("context", {})
-        colors = generation_data.get("color_scheme", {})
-        
-        for i, variation in enumerate(generation_data.get("variations", [])):
-            html = build_landing_page_html(variation, tone, context, colors)
-            html_variations.append({
-                "variation_number": i + 1,
-                "html": html,
-                "mismatch_analysis": generation_data.get("mismatch_analysis", ""),
-                "change_log": variation.get("change_log", [])
-            })
+    # 2. Scrape the real landing page
+    scraped = scrape_landing_page(landing_url)
+    raw_html = scraped.get("raw_html", "")
 
-        return {
-            "success": True,
-            "ad_analysis": ad_analysis,
-            "variations": html_variations,
-            "original_html": scraped_data.get("raw_html", "")
-        }
+    if not raw_html:
+        print(f"Scrape failed for {landing_url}: {scraped.get('error')}")
 
-    except Exception as e:
-        print("Error:", str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+    # 3. Ask AI for targeted modifications
+    generation = llm.generate_landing_page(ad_analysis, scraped, tone)
+
+    if "error" in generation:
+        raise HTTPException(500, generation["error"])
+
+    # 4. Apply modifications to the REAL HTML
+    context  = generation.get("context", {})
+    colors   = generation.get("color_scheme", {})
+    mismatch = generation.get("mismatch_analysis", "")
+
+    html_variations = []
+    for i, variation in enumerate(generation.get("variations", [])):
+        enhanced_html = build_landing_page_html(
+            variation_data=variation,
+            tone=tone,
+            context=context,
+            colors=colors,
+            raw_html=raw_html,
+        )
+        html_variations.append({
+            "variation_number": i + 1,
+            "html": enhanced_html,
+            "mismatch_analysis": mismatch,
+            "change_log": variation.get("change_log", []),
+        })
+
+    return {
+        "success": True,
+        "ad_analysis": ad_analysis,
+        "variations": html_variations,
+        "original_html": raw_html,
+    }
+
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
