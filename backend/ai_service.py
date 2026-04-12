@@ -82,16 +82,16 @@ Do NOT create a brand new page from scratch. Instead, ENHANCE the existing conte
 
 TASK REQUIREMENTS:
 1. Maintain the "Core Identity" of the existing page but improve every element for higher conversion.
-2. Identify 3-4 specific "Optimized Variations" where each variation is an incremental improvement over the original.
-3. For each variation, you MUST provide:
-   - Updated content (Hero, Benefits, Social Proof, CTA, etc.) grounded in original data but improved.
-   - If available in 'media' list, choose the most relevant media object (url, type, etc.) and save it in 'hero_media'.
-   - A list of specific changes made (e.g., "Changed headline from 'Welcome' to 'Get 20% Off Now'").
-   - CRO Reasoning for each change (e.g., "Aligns with the 'discount' intent of the ad creative").
+2. Identify EXACTLY 3 (three) specific "Optimized Variations". No more, no less.
+3. For each variation, you MUST:
+   - Provide updated copy grounded in the original page content but improved for the ad's context.
+   - MANDATORY: Search the 'media' list in 'scraped_data'. Pick the most relevant object (image, gif, or video) to represent the product/offer in the Hero section.
+   - Assign this object to 'hero_media' in the JSON.
+   - If no media is found in the list, leave 'hero_media' empty and use 'image_keyword'.
 
-Output ONLY valid JSON in the following structure:
+Output ONLY valid JSON in this structure:
 {{
-  "mismatch_analysis": "A critical 3-4 sentence analysis of why the CURRENT page fails to convert the AD traffic.",
+  "mismatch_analysis": "Critical 3-sentence analysis.",
   "context": {{
     "industry": "...",
     "intent": "...",
@@ -102,9 +102,7 @@ Output ONLY valid JSON in the following structure:
   "variations": [
     {{
       "variation_number": 1,
-      "change_log": [
-        {{"change": "...", "reason": "..."}}
-      ],
+      "change_log": [ {{"change": "...", "reason": "..."}} ],
       "hero": {{
         "badge": "...", 
         "headline": "...", 
