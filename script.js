@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
         statusText.textContent = 'Analyzing ad and scraping landing page...';
 
         try {
-            const response = await fetch('http://localhost:8000/api/generate', {
+            const response = await fetch('https://ad2landing-2.onrender.com/api/generate', {
                 method: 'POST',
                 body: formData
             });
