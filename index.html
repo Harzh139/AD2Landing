@@ -1,22 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ad2Page — AI Landing Page Personalizer</title>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
+
+    <!-- Mobile hamburger -->
+    <button class="menu-toggle" id="menu-toggle" aria-label="Open menu">
+        <i class="fa-solid fa-bars"></i>
+    </button>
+
+    <!-- Overlay -->
+    <div class="panel-overlay" id="panel-overlay"></div>
+
     <div class="app-shell">
 
         <!-- ═══ LEFT PANEL ═══ -->
-        <aside class="left-panel">
+        <aside class="left-panel" id="left-panel">
             <div class="brand">
                 <div class="brand-icon"><i class="fa-solid fa-bolt"></i></div>
                 <div>
@@ -27,10 +32,8 @@
 
             <form id="main-form" novalidate>
 
-                <!-- Step 1 -->
                 <div class="form-step">
                     <div class="step-label"><span class="step-num">01</span> Ad Creative</div>
-
                     <div class="input-tabs" id="input-tabs">
                         <button type="button" class="itab active" data-tab="image">
                             <i class="fa-regular fa-image"></i> Image
@@ -55,9 +58,7 @@
                     </div>
 
                     <div class="tab-pane" id="tab-text">
-                        <textarea id="ad_text"
-                            placeholder="Paste your full ad copy here — headline, body, CTA, offer details..."
-                            rows="6"></textarea>
+                        <textarea id="ad_text" placeholder="Paste your full ad copy here — headline, body, CTA, offer details..." rows="5"></textarea>
                     </div>
 
                     <div class="tab-pane" id="tab-video">
@@ -68,17 +69,15 @@
                     </div>
                 </div>
 
-                <!-- Step 2 -->
                 <div class="form-step">
                     <div class="step-label"><span class="step-num">02</span> Landing Page URL</div>
                     <div class="field-wrap">
                         <i class="fa-solid fa-link field-icon"></i>
                         <input type="url" id="landing_url" placeholder="https://yoursite.com/landing" required>
                     </div>
-                    <p class="field-hint">We'll scrape this page and enhance it — not replace it.</p>
+                    <p class="field-hint">We enhance this page — not replace it.</p>
                 </div>
 
-                <!-- Step 3 -->
                 <div class="form-step">
                     <div class="step-label"><span class="step-num">03</span> Tone</div>
                     <div class="tone-grid">
@@ -113,29 +112,19 @@
 
                 <div class="status-bar hidden" id="status-bar">
                     <div class="status-steps">
-                        <div class="sstep active" id="ss1">
-                            <div class="sstep-dot"></div><span>Analyzing ad</span>
-                        </div>
-                        <div class="sstep" id="ss2">
-                            <div class="sstep-dot"></div><span>Scraping page</span>
-                        </div>
-                        <div class="sstep" id="ss3">
-                            <div class="sstep-dot"></div><span>Generating enhancements</span>
-                        </div>
-                        <div class="sstep" id="ss4">
-                            <div class="sstep-dot"></div><span>Building preview</span>
-                        </div>
+                        <div class="sstep active" id="ss1"><div class="sstep-dot"></div><span>Analyzing ad</span></div>
+                        <div class="sstep" id="ss2"><div class="sstep-dot"></div><span>Scraping page</span></div>
+                        <div class="sstep" id="ss3"><div class="sstep-dot"></div><span>Generating enhancements</span></div>
+                        <div class="sstep" id="ss4"><div class="sstep-dot"></div><span>Building preview</span></div>
                     </div>
                 </div>
             </form>
 
-            <!-- Results sidebar section -->
             <div class="results-meta hidden" id="results-meta">
                 <div class="divider"></div>
-                <div class="analysis-card" id="analysis-card">
-                    <div class="ac-header">
-                        <span class="ac-title"><i class="fa-solid fa-magnifying-glass-chart"></i> Mismatch
-                            Analysis</span>
+                <div class="analysis-card">
+                    <div class="ac-header" id="ac-toggle-row">
+                        <span class="ac-title"><i class="fa-solid fa-magnifying-glass-chart"></i> Mismatch Analysis</span>
                         <button class="ac-toggle" id="ac-toggle"><i class="fa-solid fa-chevron-down"></i></button>
                     </div>
                     <div class="ac-body" id="ac-body">
@@ -143,8 +132,8 @@
                     </div>
                 </div>
 
-                <div class="changes-card" id="changes-card">
-                    <div class="ac-header">
+                <div class="changes-card">
+                    <div class="ac-header" id="cc-toggle-row">
                         <span class="ac-title"><i class="fa-solid fa-list-check"></i> Changes Made</span>
                         <button class="cc-toggle" id="cc-toggle"><i class="fa-solid fa-chevron-down"></i></button>
                     </div>
@@ -162,7 +151,6 @@
 
         <!-- ═══ RIGHT PANEL ═══ -->
         <main class="right-panel">
-            <!-- Toolbar -->
             <div class="toolbar">
                 <div class="toolbar-left">
                     <div class="device-switch">
@@ -174,7 +162,7 @@
                         </button>
                     </div>
                 </div>
-                <div class="toolbar-center" id="toolbar-center">
+                <div class="toolbar-center">
                     <div class="url-pill" id="url-pill">
                         <i class="fa-solid fa-lock"></i>
                         <span id="url-display">Enter a URL to get started</span>
@@ -182,21 +170,17 @@
                 </div>
                 <div class="toolbar-right">
                     <div class="view-switch">
-                        <button class="vsw active" data-view="preview"><i class="fa-regular fa-eye"></i>
-                            Preview</button>
-                        <button class="vsw" data-view="code"><i class="fa-solid fa-code"></i> Code</button>
-                        <button class="vsw" data-view="diff"><i class="fa-solid fa-code-compare"></i> Diff</button>
+                        <button class="vsw active" data-view="preview"><i class="fa-regular fa-eye"></i> <span>Preview</span></button>
+                        <button class="vsw" data-view="code"><i class="fa-solid fa-code"></i> <span>Code</span></button>
+                        <button class="vsw" data-view="diff"><i class="fa-solid fa-code-compare"></i> <span>Diff</span></button>
                     </div>
                     <button class="copy-btn hidden" id="copy-btn">
-                        <i class="fa-regular fa-copy"></i> Copy HTML
+                        <i class="fa-regular fa-copy"></i> <span>Copy HTML</span>
                     </button>
                 </div>
             </div>
 
-            <!-- Preview workspace -->
             <div class="workspace">
-
-                <!-- Empty state -->
                 <div class="empty-state" id="empty-state">
                     <div class="es-graphic">
                         <div class="es-circle es-c1"></div>
@@ -214,31 +198,24 @@
                     </div>
                 </div>
 
-                <!-- Preview frame area -->
                 <div class="frame-wrap hidden" id="frame-wrap">
-                    <!-- Before/After badge -->
-                    <div class="ba-badge" id="ba-badge">
+                    <div class="ba-badge">
                         <button class="ba-btn active" id="ba-after">Enhanced</button>
                         <button class="ba-btn" id="ba-before">Original</button>
                     </div>
-
                     <div class="iframe-shell desktop" id="iframe-shell">
-                        <iframe id="preview-frame" sandbox="allow-scripts allow-same-origin allow-forms"
-                            title="Preview"></iframe>
+                        <iframe id="preview-frame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups" title="Preview"></iframe>
                     </div>
                 </div>
 
-                <!-- Code view -->
                 <div class="code-view hidden" id="code-view">
                     <div class="code-toolbar">
                         <span class="code-fname"><i class="fa-brands fa-html5"></i> enhanced-landing.html</span>
-                        <button class="copy-code-btn" id="copy-code-btn"><i class="fa-regular fa-copy"></i>
-                            Copy</button>
+                        <button class="copy-code-btn" id="copy-code-btn"><i class="fa-regular fa-copy"></i> Copy</button>
                     </div>
                     <pre class="code-pre"><code id="code-output"></code></pre>
                 </div>
 
-                <!-- Diff view -->
                 <div class="diff-view hidden" id="diff-view">
                     <div class="diff-header">
                         <div class="diff-col-label original-label"><i class="fa-solid fa-minus"></i> Original Page</div>
@@ -249,12 +226,10 @@
                         <div class="diff-panel" id="diff-enhanced"></div>
                     </div>
                 </div>
-
             </div>
         </main>
     </div>
 
     <script src="script.js"></script>
 </body>
-
 </html>

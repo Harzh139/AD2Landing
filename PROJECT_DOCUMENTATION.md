@@ -1,59 +1,42 @@
-# Project Documentation: Ad-to-Landing Page Personalizer
+# Ad2Page: AI Landing Page Personalizer
+## Brief Explanation & System Flow
 
-## 1. Problem Statement
-In digital marketing, a significant "leak" occurs in the conversion funnel when there is a disconnect between the advertisement a user clicks and the landing page they arrive at. This is known as **Message Mismatch**.
+Ad2Page is an AI-powered Conversion Rate Optimization (CRO) engine that surgically personalizes existing landing pages based on specific ad creatives. Instead of building new pages from scratch, it bridges the gap between what a user sees in an ad and what they experience on the page.
 
-*   **The Issue:** Most campaigns drive highly segmented ad traffic (targeted by specific interests or offers) to a single, generic landing page.
-*   **Why it Matters:** When a user clicks an ad for "50% off Sneakers" but lands on a homepage showing "New Summer Collection," they lose trust or lose interest, leading to high bounce rates and wasted ad spend.
-*   **The Barrier:** Manually creating unique landing page variations for every ad group is time-consuming and expensive for both developers and marketers.
+### System Flow:
+1.  **Ad Intelligence Phase**: The system analyzes the ad (image, text, or video) to extract the "Offer Core," "Audience Intent," and "Visual Tone."
+2.  **Context Extraction Phase**: The Scraper retrieves the real-time structure and copy of the target landing page (Headlines, CTAs, Benefits).
+3.  **CRO Mapping Phase**: The AI Agent compares the Ad intent vs. the Page content to find "Message Mismatches."
+4.  **Surgical Injection Phase**: The Template Builder takes the AI's optimized copy and injects it into a branded, high-performance layout that inherits the original site's context.
 
-## 2. Purpose of the Project
-The **Ad-to-Landing Page Personalizer** was built to solve this problem by automating the creation of hyper-personalized landing pages that perfectly mirror the intent of the ad creative.
+---
 
-*   **Goal:** To build an AI-powered system that analyzes any ad creative (text, image, or video context) and instantly generates tailored landing page variations.
-*   **Expected Impact:** Improved conversion rates, lower customer acquisition costs (CAC), and a seamless, personalized user journey.
+## Key Components & Agent Design
 
-## 3. Initial Version (Before Improvements)
-The first iteration of this system served as a basic proof of concept but had several limitations:
-*   **Generic Outputs:** The AI simply "improved the copy" without understanding the deeper industry context (e.g., SaaS vs. E-commerce).
-*   **Structural Weakness:** The generated pages followed a rigid, one-size-fits-all layout.
-*   **Static Design:** Visuals were basic, and there was no sense of "brand feel" or "urgency" tailored to the ad's message.
-*   **Lack of Structure:** The output was often just raw text rather than a functional, ready-to-deploy web structure.
+The system is designed as a modular pipeline of specialized "agents":
 
-## 4. Improvements Made
-Through several iterations, the system was upgraded to a production-grade product:
-*   **Conversion-Focused Prompt Engineering:** Re-engineered LLM prompts to act as an "Expert Conversion Copywriter," focusing on benefits, social proof, and urgency.
-*   **Message Match Intelligence:** Implemented a "Mismatch Analysis" engine that identifies exactly what the original landing page is missing compared to the ad.
-*   **Structured Generation:** The AI now outputs valid JSON, allowing for deep control over components like hero sections, pricing grids, and final CTAs.
-*   **Dynamic Visual Design Systems:** Created 4 distinct visual languages (**Professional, Luxury, Urgent, Conversational**) that radicaly alter CSS, typography, and color schemes based on the ad's tone.
-*   **Claude-Style Artifact UI:** Implemented a modern, dual-pane preview system with device toggles and a code-copy feature.
-*   **Multi-Variation Support:** The system generates 3 distinct variations (A/B testing ready) for every ad input.
+*   **Analysis Agent (Vision/Text)**: Uses Llama 3.2 Vision and 3.1 Text to deconstruct marketing psychological triggers from ad mockups.
+*   **Scraper Agent**: A robust crawler that captures raw HTML and structured data, resolving relative URLs and capturing brand-specific media (videos/gifs).
+*   **CRO Strategy Agent**: The "Brain" that identifies incremental optimization angles (Offer-focused, Benefit-focused, Urgency-focused).
+*   **Template Logic Engine**: A deterministic builder that converts AI-generated JSON into production-ready HTML/CSS, ensuring the layout never "breaks" regardless of the AI's output.
 
-## 5. Final Solution
-The system now functions as a complete end-to-end personalization pipeline:
-1.  **Input:** User provides an ad payload (image, text, or video link) and the target landing page URL.
-2.  **Processing:** 
-    *   **Scraper:** Extracts context and content from the existing landing page.
-    *   **AI Engine (Groq):** Analyzes the ad context and current page to bridge the gap.
-    *   **Template Builder:** Dynamically injects the AI data into high-converting HTML components.
-3.  **Output:** A modern UI displaying the "Mismatch Analysis" and 3 ready-to-use landing page variations with live previews and source code access.
+---
 
-## 6. Key Features
-*   **Multimodal Analysis:** Understands ads through text, vision models (ad screenshots), or video metadata.
-*   **Deep Scraping:** Context-aware parsing of existing landing page headers, CTAs, and benefits.
-*   **Instant Variations:** Flip between `Var 1`, `Var 2`, and `Var 3` to find the best-performing structure.
-*   **Production Ready:** Integrated "Copy Code" feature to instantly deploy the generated HTML.
-*   **Visual Personalization:** Automatically adapts colors and typography to match the ad's industry (e.g., aggressive reds for "Urgent" deals, sleek gold for "Luxury" brands).
+## Reliability & Governance
+### How we handle common AI challenges:
 
-## 7. Tech Stack
-*   **Frontend:** Vanilla HTML5, CSS3 (Custom Variables), and JavaScript (Modern UI/UX).
-*   **Backend:** FastAPI (Python) for high-performance asynchronous processing.
-*   **AI Models:** 
-    *   **Groq API:** Llama 3.1-8B-Instant (for lightning-fast text generation).
-    *   **Vision AI:** Llama 3.2-11B-Vision-Preview (for ad mockup analysis).
-*   **Libraries:** BeautifulSoup4 (Scraping), Uvicorn (Server), Python-Dotenv (Security).
+#### 1. Random Changes & Inconsistent Outputs
+*   **Constraint-Based Prompting**: We force the LLM into a strict JSON-Schema response format. By defining exactly what fields are allowed (and locking the count to exactly 3 variations), we prevent the AI from "wandering" or adding unnecessary elements.
+*   **Temperature Tuning**: We use a higher temperature (0.85) to ensure diversity *between* variations (so Var 1 and Var 2 aren't identical), but keep a low sequence penalty to ensure each individual variation stays coherent.
 
-## 8. Conclusion
-The **Ad-to-Landing Page Personalizer** bridges the gap between marketing creativity and technical execution. By using state-of-the-art AI, it allows brands to scale their personalization efforts without increasing their engineering headcount. 
+#### 2. Broken UI 
+*   **Decoupled Architecture**: The AI never generates CSS or Layout code directly. It only generates **Copy and Intent**. Our `template_builder.py` handles the rendering. This ensures that even if the AI gives a $1,000,000$ word headline, our CSS handles it gracefully without breaking the layout.
+*   **CSS Variable Injection**: System-wide styles (colors, fonts, radius) are controlled by deterministic CSS variables based on the "Tone Selection," not AI hallucination.
 
-This project is a high-value tool for **Performance Marketers** looking to boost ROI and **SaaS companies** aiming to create highly targeted conversion funnels in seconds.
+#### 3. Hallucinations
+*   **Context Grounding**: We inject the `scraped_data` (the real page content) directly into the AI's prompt as the "Grounded Truth." The AI is explicitly told it is a "CRO Specialist," not a creator; it is penalized if it ignores the original brand data.
+*   **Asset Inheritance**: The system is forced to pick images/videos from the `media` list extracted from the real website, preventing it from inventing non-existent product features.
+
+#### 4. UI/UX Consistency
+*   **Stateful Frontend**: The script.js manages variation states, ensuring that "Var 1" always represents the same logic for that session. 
+*   **Original HTML Preservation**: By returning the `original_html` in the API, we give the user a source of truth to compare against, making any AI-driven changes transparent and verifiable.
